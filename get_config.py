@@ -1,10 +1,9 @@
 import netmiko
 
 
-def get_config(device_username):
+def get_config(device_username, device_password):
     # Define the device parameters
     device_ip = "10.192.0.200"
-    device_username = device_username
     device_password = "security"
     device_type = "hp_procurve"
 
