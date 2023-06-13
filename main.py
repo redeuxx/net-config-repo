@@ -1,5 +1,5 @@
 # Description: This script will connect to a device and get the configuration
-from datetime import date
+from datetime import date, datetime
 import os
 import get_config
 import my_secrets
@@ -9,7 +9,10 @@ import conf
 def main():
     config, device_ip = get_config.get_config(my_secrets.USERNAME, my_secrets.PASSWORD)
     print(config)
-    filename = str(date.today()) + "_" + device_ip + ".txt"
+    now = datetime.now()
+    filename = (
+        str(date.today()) + "_" + now.strftime("%H-%M-%S") + "_" + device_ip + ".txt"
+    )
     dir_complete_path_1 = os.path.abspath(conf.STORE_DIR)
     device_complete_path = os.path.join(dir_complete_path_1, device_ip)
     file_complete_path = os.path.abspath(os.path.join(device_complete_path, filename))
