@@ -1,6 +1,7 @@
 import sys
 import db
 import get_config
+import utils
 
 if len(sys.argv) < 2:
     OPTION = "default"
@@ -13,7 +14,7 @@ match OPTION:
         for ip, device_id in zip(db.list_all_ips()[0], db.list_all_ips()[1]):
             print(f"{device_id} - {ip}")
     case "add":
-        # add device to db. Takes 2 arguments: ip, 2device_type
+        # add device to db. Takes 2 arguments: ip, device_type
         # TODO: there really needs to be syntax checking here
         db.insert_device(ip=sys.argv[2], hostname="", device_type=sys.argv[3])
     case "del":
@@ -25,5 +26,9 @@ match OPTION:
     case "fetchall":
         # fetch all configs
         get_config.fetch_all_configs()
+    case "clean":
+        # clean up running-configs/ directory
+        print("Cleaning up running-configs/ directory.")
+        utils.del_oldest_configs()
     case _:  # default
-        print("Valid options are: list, add, del, fetchall")
+        print("Valid options are: list, add, del, fetchall, clean")

@@ -7,6 +7,19 @@ import db
 
 
 def get_config(device_username, device_password, device_ip, device_type):
+    """
+    Get the running configuration of a device.
+
+    Args:
+        username: The username to authenticate with.
+        password: The password to authenticate with.
+        device_ip: The IP address of the device.
+        device_type: The device parameters.
+
+    Returns:
+        The configuration of the device.
+    """
+
     # Define the device parameters
     device_type = "hp_procurve"
 
@@ -29,14 +42,22 @@ def get_config(device_username, device_password, device_ip, device_type):
 
 
 def fetch_all_configs():
-    # get all IPs from the database and fetch all configs
+    """
+    Fetch the running configuration of all devices in the database and write them to a file.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     for device_ip, device_type in zip(
         db.list_all_ips_with_type()[0], db.list_all_ips_with_type()[1]
     ):
         config = get_config(
             my_secrets.USERNAME, my_secrets.PASSWORD, device_ip, device_type
         )
-        print(f"Fetching config for {device_ip}...")
+        print(f"Fetching config for {device_ip} ...")
         now = datetime.now()
         filename = (
             str(date.today())
