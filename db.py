@@ -27,7 +27,7 @@ def insert_device(ip, hostname, device_type):
 
 
 def list_all_ips():
-    # list all the IPs in the database
+    # list all the IPs with device IDs in the database
     device = []
     device_id = []
     for device_ip in Device.select():
@@ -36,12 +36,22 @@ def list_all_ips():
     return device, device_id
 
 
-def delete_record(id):
+def list_all_ips_with_type():
+    # list all the IPs in the database
+    device = []
+    device_type = []
+    for device_ip in Device.select():
+        device.append(device_ip.ip)
+        device_type.append(device_ip.device_type)
+    return device, device_type
+
+
+def delete_device(id):
     # delete record by id
     device = Device.delete_by_id(id)
-    print(device)
+    return device
 
 
 # insert_device("10.192.0.200", "R1", "hp_procurve")
-list_all_ips()
-# delete_record(1)
+# list_all_ips()
+# delete_device(2)
