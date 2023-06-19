@@ -27,6 +27,7 @@ def get_oldest_files(directory, amount):
 
     Args:
         directory: The path to the directory.
+        amount: The number of files to return.
 
     Returns:
         A list of the oldest files in the directory.
