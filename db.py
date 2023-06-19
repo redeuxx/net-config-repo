@@ -17,7 +17,7 @@ class Device(peewee.Model):
     """
 
     id = peewee.IntegerField(primary_key=True)
-    ip = peewee.IPField()
+    ip = peewee.IPField(unique=True)
     hostname = peewee.TextField()
     date_added = peewee.DateTimeField(default=datetime.now)
     device_type = peewee.CharField()
@@ -42,9 +42,11 @@ def insert_device(ip, hostname, device_type):
     Returns:
         None
     """
-
-    device = Device(ip=ip, hostname=hostname, device_type=device_type)
-    device.save()
+    try:
+        device = Device(ip=ip, hostname=hostname, device_type=device_type)
+        device.save()
+    except peewee.IntegrityError:
+        exit("Device already exists in the database.")
 
 
 def list_all_ips():
