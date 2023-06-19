@@ -2,6 +2,7 @@ import sys
 import db
 import get_config
 import utils
+import conf
 
 if len(sys.argv) < 2:
     OPTION = "default"
@@ -29,6 +30,6 @@ match OPTION:
     case "clean":
         # clean up running-configs/ directory
         print("Cleaning up running-configs/ directory.")
-        utils.del_oldest_configs()
+        utils.del_oldest_configs(conf.MAX_CONFIGS)
     case _:  # default
         print("Valid options are: list, add, del, fetchall, clean")

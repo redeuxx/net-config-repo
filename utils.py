@@ -20,7 +20,7 @@ def get_directories(directory):
     return directories
 
 
-def get_oldest_files(directory):
+def get_oldest_files(directory, amount):
     """
     Returns a list of the oldest files in a directory, not including the newest 10 files and only
     if the directory has more than 10 files.
@@ -31,7 +31,7 @@ def get_oldest_files(directory):
     Returns:
         A list of the oldest files in the directory.
     """
-    if len(os.listdir(directory)) <= 10:
+    if len(os.listdir(directory)) <= amount:
         return []
 
     all_files = []
@@ -39,11 +39,11 @@ def get_oldest_files(directory):
         if os.path.isfile(os.path.join(directory, file)):
             all_files.append(file)
 
-    newest_10_files = all_files[:10]
+    newest_files = all_files[:amount]
 
-    files_not_in_newest_10 = [file for file in all_files if file not in newest_10_files]
+    files_not_in_newest = [file for file in all_files if file not in newest_files]
 
-    return files_not_in_newest_10
+    return files_not_in_newest
 
 
 def num_files(directory):
@@ -64,18 +64,18 @@ def num_files(directory):
     return number_of_files
 
 
-def del_oldest_configs():
+def del_oldest_configs(amount):
     """
     Deletes the oldest configs in the store directory.
 
     Args:
-        None
+        Number of configs to delete.
 
     Returns:
         None
 
     """
     for i in get_directories(conf.STORE_DIR):
-        for file in get_oldest_files(i):
+        for file in get_oldest_files(i, amount):
             print(f"Removing {os.path.join(i, file)}.")
             os.remove(os.path.join(i, file))
