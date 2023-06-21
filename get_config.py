@@ -1,6 +1,5 @@
 from datetime import date, datetime
 import os
-import netmiko
 import my_secrets
 import conf
 import db
@@ -19,25 +18,14 @@ def get_config(device_username, device_password, device_ip, device_type):
     Returns:
         The configuration of the device.
     """
+    # Set module_name to device_type
+    module_name = device_type
 
-    # Define the device parameters
-    device_type = "hp_procurve"
-
-    # Create a connection object
-    connection = netmiko.ConnectHandler(
-        ip=device_ip,
-        username=device_username,
-        password=device_password,
-        device_type=device_type,
+    # Import module named device_type, pass device type to get_running_config, return to string
+    config = __import__(f"vendors.{module_name}", fromlist=[""]).get_running_config(
+        "get-running-config", device_username, device_password, device_ip, device_type
     )
 
-    # Get the running configuration
-    config = connection.send_command("show running-config")
-
-    # Close the connection
-    connection.disconnect()
-
-    # Return the configuration
     return config
 
 
