@@ -41,6 +41,9 @@ def scan_cidr(ip):
     total_hosts = len(list(get_cidr_hosts(ip)))
     hosts = get_cidr_hosts(ip)
     print(f"Scanning {total_hosts} hosts ...")
+    num_alive = 0
 
     for host in tqdm(hosts, total=total_hosts):
-        is_alive(str(host))
+        if is_alive(str(host)):
+            num_alive += 1
+    print(f"{num_alive} hosts are alive.")
