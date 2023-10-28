@@ -1,4 +1,8 @@
 my_secrets.py
 devices.db
+test*.py
 running-configs/
 __pycache__/
+bin/
+include/
+lib/
