@@ -13,7 +13,12 @@ def get_cidr_hosts(ip):
     Returns:
         The ip address or addresses
     """
-    return ipaddress.ip_network(ip).hosts()
+    try:
+        hosts = ipaddress.ip_network(ip).hosts()
+        return hosts
+    except ValueError:
+        print("Invalid IP address or CIDR.")
+        exit()
 
 
 def is_alive(ip):

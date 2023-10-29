@@ -1,5 +1,4 @@
 import os
-import ipaddress
 import conf
 
 

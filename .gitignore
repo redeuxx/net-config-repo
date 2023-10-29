@@ -1,5 +1,6 @@
 my_secrets.py
 devices.db
+pyvenv.cfg
 test*.py
 running-configs/
 __pycache__/
