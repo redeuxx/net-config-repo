@@ -1,10 +1,10 @@
 # manage.py
 
 import argparse
-# import sys
-# import db
-# import get_config
-# import utils
+import sys
+import db
+import get_config
+import utils
 import conf
 import hosts
 
@@ -17,6 +17,8 @@ parser.version = conf.VERSION
 # You must choose one of the mutually exclusive options.
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-s", "--scan", help='Scan an IP address or CIDR for hosts that are alive.')
+group.add_argument("-l", "--list", help='List all devices in the database.')
+group.add_argument("-a", "--add", help='Add a device to the database.')
 # end group
 
 parser.add_argument("-v", "--version", action='version', help='Show the version of the program.')
@@ -24,6 +26,11 @@ args = parser.parse_args()
 
 if args.scan:
     hosts.scan_cidr(args.scan)
+elif args.list:
+    for ip, device_id in zip(db.list_all_ips()[0], db.list_all_ips()[1]):
+        print(f"{device_id} - {ip}")
+elif args.add:
+    db.insert_device(ip=args.add, hostname="", device_type="")
 
 # TODO: convert this to argparse
 # if len(sys.argv) < 2:

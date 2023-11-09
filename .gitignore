@@ -7,3 +7,6 @@ __pycache__/
 bin/
 include/
 lib/
+Scripts/
+pyvenv.cfg
+pyvenv.cfg
