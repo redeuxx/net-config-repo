@@ -7,10 +7,11 @@ import get_config
 import utils
 import conf
 import hosts
+import device
 
 parser = argparse.ArgumentParser(
     usage = "test.py [options]",
-    description = "--scan - Scan a CIDR for hosts."
+    description = "Switch management tool."
 )
 parser.version = conf.VERSION
 
@@ -22,16 +23,25 @@ group.add_argument("--add", help='Add a device to the database.')
 group.add_argument("--remove", type=int, help='Delete a device from the database using the device id.')
 group.add_argument("--fetchall", action="store_true", help='Fetch all configs from the database.')
 group.add_argument("--clean", action="store_true", help='Clean up running-configs/ directory.')
-
 # end group
-parser.add_argument("-hostname", help='Hostname of the device.')
+
+# Optional arguments
 parser.add_argument("-type", help='Type of device.')
+parser.add_argument("-add", action="store_true", help='Add discovered device/s to the database.')
 parser.add_argument("-v", "--version", action='version', help='Show the version of the program.')
 
 args = parser.parse_args()
 
 if args.scan:
-    hosts.scan_cidr(args.scan)
+    alive_hosts = hosts.scan_cidr(args.scan)
+    if (args.add is not None):
+        for device_ip in alive_hosts:
+            device_type = device.detect_device(device_ip)
+            if(db.insert_device(ip=device_ip, hostname="", device_type=device_type) == 0): # TODO: add hostname to args, check for device_type
+                print(f"{device_ip} already exists in the database.")
+            else:
+                print(f"{device_ip} has been added to the database.")
+    
 elif args.list:
     if(len(db.list_all_ips()[0])) == 0:
         print("No devices in database.")
@@ -39,16 +49,15 @@ elif args.list:
         for ip, device_id in zip(db.list_all_ips()[0], db.list_all_ips()[1]):
             print(f"{device_id} - {ip}")
 elif args.add:
-    if (args.hostname is not None):
-        hostname = args.hostname
-    else:
-        hostname = ""
+    hostname = device.get_hostname(device_ip=args.add, device_type=args.type)        
         
     if(args.type is None):
         print("You must specify a device type with the -type flag.")
     else:
-        db.insert_device(ip=args.add, hostname="", device_type=args.type)
-        print("Device added.")
+        if(db.insert_device(ip=args.add, hostname=hostname, device_type=args.type) == 0):
+            print(f"{args.add} already exists in the database.")
+        else:
+            print(f"{args.add} has been added to the database.")
 elif args.remove:
     if db.delete_device(id=args.remove) == 1:
         print("Device removed.")

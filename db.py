@@ -46,7 +46,7 @@ def insert_device(ip, hostname, device_type):
         device = Device(ip=ip, hostname=hostname, device_type=device_type)
         device.save()
     except peewee.IntegrityError:
-        exit("Device already exists in the database.")
+        return 0
 
 
 def list_all_ips():
