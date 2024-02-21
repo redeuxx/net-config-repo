@@ -23,9 +23,10 @@ def get_config(device_username, device_password, device_ip, device_type):
 
     # Import module named device_type, pass device type to get_running_config, return to string
     config = __import__(f"vendors.{module_name}", fromlist=[""]).get_running_config(
-        "get-running-config", device_username, device_password, device_ip, device_type
+        device_username, device_password, device_ip, device_type
     )
 
+    # Return the configuration
     return config
 
 

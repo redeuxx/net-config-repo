@@ -8,6 +8,7 @@ import utils
 import conf
 import hosts
 import device
+import get_hostname
 
 parser = argparse.ArgumentParser(
     usage="test.py [options]", description="Switch management tool."
@@ -62,7 +63,9 @@ if args.scan:
 
         for device_ip in alive_hosts_filtered:
             device_type = device.detect_device(device_ip)
-            hostname = device.get_hostname(device_ip=device_ip, device_type=device_type)
+            hostname = get_hostname.get_hostname(
+                device_ip=device_ip, device_type=device_type
+            )
             print(f"Processing {device_ip} ...")
             if (
                 db.insert_device(
