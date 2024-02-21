@@ -5,7 +5,7 @@ test*.py
 running-configs/
 __pycache__/
 bin/
-include/
-lib/
+Include/
+Lib/
 Scripts/
 

@@ -43,7 +43,7 @@ def scan_cidr(ip):
     Returns:
         alive_hosts: A list of alive hosts.
     """
-    
+
     alive_hosts = []
     total_hosts = len(list(get_cidr_hosts(ip)))
     hosts = get_cidr_hosts(ip)
@@ -55,5 +55,5 @@ def scan_cidr(ip):
             num_alive += 1
             alive_hosts.append(str(host))
     print(f"{num_alive} hosts are alive.")
-    
+
     return alive_hosts
