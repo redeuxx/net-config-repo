@@ -41,7 +41,7 @@ def fetch_all_configs():
         None
     """
     for device_ip, device_type in zip(
-        db.list_all_ips_with_type()[0], db.list_all_ips_with_type()[1]
+        db.list_all_ips_with_type()[1], db.list_all_ips_with_type()[3]
     ):
         config = get_config(
             my_secrets.USERNAME, my_secrets.PASSWORD, device_ip, device_type
