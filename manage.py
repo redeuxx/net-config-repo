@@ -80,8 +80,13 @@ elif args.list:
     if (len(db.list_all_ips()[0])) == 0:
         print("No devices in database.")
     else:
-        for ip, device_id in zip(db.list_all_ips()[0], db.list_all_ips()[1]):
-            print(f"{device_id} - {ip}")
+        for device_id, device_ip, device_hostname, device_type in zip(
+            db.list_all_ips_with_type()[0],
+            db.list_all_ips_with_type()[1],
+            db.list_all_ips_with_type()[2],
+            db.list_all_ips_with_type()[3],
+        ):
+            print(f"{device_id} : {device_ip} : {device_hostname} : {device_type}")
 elif args.add:
     hostname = device.get_hostname(device_ip=args.add, device_type=args.type)
 

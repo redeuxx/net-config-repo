@@ -1,0 +1,5 @@
+peewee~=3.17.1
+netmiko~=4.3.0
+tqdm~=4.66.2
+icmplib~=3.0.4
+argparse~=1.4.0

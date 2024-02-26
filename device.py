@@ -1,8 +1,5 @@
 import my_secrets
-import get_config
-import re
-from netmiko import SSHDetect, ConnectHandler
-from getpass import getpass
+from netmiko import SSHDetect
 
 
 def detect_device(ip):

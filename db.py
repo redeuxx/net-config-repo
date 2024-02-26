@@ -80,12 +80,17 @@ def list_all_ips_with_type():
         A list of all the IPs in the database with their device types.
     """
 
-    device = []
+    device_id = []
+    device_ip = []
+    device_hostname = []
     device_type = []
-    for device_ip in Device.select():
-        device.append(device_ip.ip)
-        device_type.append(device_ip.device_type)
-    return device, device_type
+
+    for device in Device.select():
+        device_id.append(device.id)
+        device_ip.append(device.ip)
+        device_hostname.append(device.hostname)
+        device_type.append(device.device_type)
+    return device_id, device_ip, device_hostname, device_type
 
 
 def delete_device(id):

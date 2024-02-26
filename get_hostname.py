@@ -1,5 +1,4 @@
 import my_secrets
-import re
 
 
 def get_hostname(device_ip, device_type):
