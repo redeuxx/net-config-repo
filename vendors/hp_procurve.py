@@ -8,9 +8,8 @@ def get_running_config(device_username, device_password, device_ip, device_type)
     Get the command to get the running config.
 
     Args:
-        action: The action to perform.
-        username: The username to authenticate with.
-        password: The password to authenticate with.
+        device_username: The username to authenticate with.
+        device_password: The password to authenticate with.
         device_ip: The IP address of the device.
         device_type: The device parameters.
 
@@ -19,16 +18,19 @@ def get_running_config(device_username, device_password, device_ip, device_type)
 
     """
 
-    # Create a connection object
-    connection = netmiko.ConnectHandler(
-        ip=device_ip,
-        username=device_username,
-        password=device_password,
-        device_type=device_type,
-    )
 
-    # Get the running configuration
-    config = connection.send_command("show running-config")
+    device = {
+        "device_type": device_type,
+        "host": device_ip,
+        "username": device_username,
+        "password": device_password,
+        # wait a little longer for the device to respond
+        "fast_cli": False,
+        "global_delay_factor": 2,
+    }
+    with netmiko.ConnectHandler(**device) as connection:
+        # Get the running configuration
+        config = connection.send_command("show running-config")
 
     # Close the connection
     connection.disconnect()
@@ -42,8 +44,8 @@ def get_hostname(device_username, device_password, device_ip, device_type):
     Get the hostname of a device.
 
     Args:
-        username: The username to authenticate with.
-        password: The password to authenticate with.
+        device_username: The username to authenticate with.
+        device_password: The password to authenticate with.
         device_ip: The IP address of the device.
         device_type: The device parameters.
 
