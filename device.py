@@ -19,8 +19,8 @@ def detect_device(ip):
         "username": my_secrets.USERNAME,
         "password": my_secrets.PASSWORD,
         "global_delay_factor": 4,
-        "banner_timeout": 200,
-        "conn_timeout": 200,
+        "banner_timeout": 1000,
+        "conn_timeout": 1000,
     }
 
     guesser = SSHDetect(**device)

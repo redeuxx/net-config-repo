@@ -1,7 +1,6 @@
 # manage.py
 
 import argparse
-import sys
 import db
 import get_config
 import utils
@@ -9,7 +8,20 @@ import conf
 import hosts
 import device
 import get_hostname
+import time
 
+start_time = time.perf_counter()
+
+
+# Class to hold device information to be sent to the db
+class Item:
+    def __init__(self, d_ip, d_hostname, d_type):
+        self.ip = d_ip
+        self.hostname = d_hostname
+        self.device_type = d_type
+
+
+# initialize the parser
 parser = argparse.ArgumentParser(
     usage="test.py [options]", description="Switch management tool."
 )
@@ -53,7 +65,9 @@ args = parser.parse_args()
 if args.scan:
     alive_hosts = hosts.scan_cidr(args.scan)
     alive_hosts_filtered = []
+    alive_hosts_final = []
     if args.add is not None:
+        # If -skip flag is used, remove the IPs from the list.
         if args.skip is not None:
             skip_hosts = args.skip.split(",")
             skip_hosts = [value.strip() for value in skip_hosts]
@@ -61,49 +75,64 @@ if args.scan:
         else:
             alive_hosts_filtered = alive_hosts
 
+        # check if device already exists in the database
         for device_ip in alive_hosts_filtered:
-            device_type = device.detect_device(device_ip)
-            hostname = get_hostname.get_hostname(
-                device_ip=device_ip, device_type=device_type
-            )
-            print(f"Processing {device_ip} ...")
-            if (
-                db.insert_device(
-                    ip=device_ip, hostname=hostname, device_type=device_type
-                )
-                == 0
-            ):
-                print(f"{device_ip} already exists in the database.")
+            if db.is_device_in_db(device_ip) is False:
+                alive_hosts_final.append(device_ip)
             else:
-                print(f"{device_ip} has been added to the database.")
-elif args.list:
-    if (len(db.list_all_ips()[0])) == 0:
-        print("No devices in database.")
-    else:
-        for device_id, device_ip, device_hostname, device_type in zip(
-            db.list_all_ips_with_type()[0],
-            db.list_all_ips_with_type()[1],
-            db.list_all_ips_with_type()[2],
-            db.list_all_ips_with_type()[3],
-        ):
-            print(f"{device_id} : {device_ip} : {device_hostname} : {device_type}")
-elif args.add:
-    hostname = device.get_hostname(device_ip=args.add, device_type=args.type)
+                print(f"Device with ip {device_ip} already exists in the database.")
 
-    if args.type is None:
-        print("You must specify a device type with the -type flag.")
-    else:
-        if db.insert_device(ip=args.add, hostname=hostname, device_type=args.type) == 0:
-            print(f"{args.add} already exists in the database.")
+        devices_object = []
+
+        # get device type and hostname for each device, then add to the database
+        if len(alive_hosts_final) != 0:
+            for device_ip in alive_hosts_final:
+                print(f"Detecting {device_ip} device type ...")
+                device_type = device.detect_device(device_ip)
+                print(f"Getting hostname for {device_ip} ...")
+                hostname = get_hostname.get_hostname(
+                    device_ip=device_ip, device_type=device_type
+                )
+                single_device = Item(device_ip, hostname, device_type)
+                devices_object.append(single_device)
+            db.insert_device_bulk(devices_object)
         else:
-            print(f"{args.add} has been added to the database.")
-elif args.remove:
-    if db.delete_device(id=args.remove) == 1:
-        print("Device removed.")
+            print("No devices to add to the database.")
+
+elif args.list:
+    devices = db.list_all_ips_with_type()
+    if len(devices) == 0:
+        print("No devices in the database.")
     else:
-        print("Device ID does not exist.")
+        for device in devices:
+            print(
+                f"{device.id} | {device.ip} | {device.hostname} | {device.device_type}"
+            )
+
+elif args.add:
+    print(f"Detecting {args.add} device type ...")
+    device_type = device.detect_device(args.add)
+    print(f"Getting hostname for {args.add} ...")
+    hostname = get_hostname.get_hostname(device_ip=args.add, device_type=device_type)
+
+    if db.insert_device(args.add, hostname, device_type) is True:
+        print(f"Device with ip {args.add} has been added to the database.")
+    else:
+        print(f"Device with ip {args.add} already exists in the database.")
+
+elif args.remove:
+    if db.remove_device(args.remove) is True:
+        print(f"Device with id {args.remove} has been removed from the database.")
+    else:
+        print(f"Device with id {args.remove} does not exist in the database.")
+
 elif args.fetchall:
     get_config.fetch_all_configs()
+
 elif args.clean:
     print("Cleaning up running-configs/ directory.")
     utils.del_oldest_configs(conf.MAX_CONFIGS)
+
+end_time = time.perf_counter()
+elapsed_time = end_time - start_time
+print("Execution time:", elapsed_time, "seconds")

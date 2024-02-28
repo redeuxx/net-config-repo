@@ -1,33 +1,40 @@
 from datetime import datetime
-import peewee
+from sqlalchemy import create_engine, String, Integer, Column, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker
+import sqlalchemy.exc
+
+# Create a new database engine, in this case, a sqlite database
+engine = create_engine("sqlite:///devices.db")
+# Create a new table with a name, count, amount, and valid column
+Base = declarative_base()
 
 
-db = peewee.SqliteDatabase("devices.db")
-
-
-class Device(peewee.Model):
+class Devices(Base):
     """
-    Database model for devices.
+    The Devices class is a table that stores information about devices.
 
-    Args:
-        peewee.Model: The base model class that other models will inherit from.
-
-    Returns:
-        None
+    Attributes:
+        id: The id of the device.
+        ip: The IP address of the device.
+        hostname: The hostname of the device.
+        device_type: The device type.
+        date_updated: The date the device was updated.
     """
 
-    id = peewee.IntegerField(primary_key=True)
-    ip = peewee.IPField(unique=True)
-    hostname = peewee.TextField()
-    date_added = peewee.DateTimeField(default=datetime.now)
-    device_type = peewee.CharField()
-
-    class Meta:
-        database = db  # This model uses the "devices.db" database.
+    __tablename__ = "devices"
+    id = Column(Integer, primary_key=True)
+    ip = Column(String, unique=True, nullable=False)
+    hostname = Column(String, nullable=False)
+    device_type = Column(String, nullable=False)
+    date_updated = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
-db.connect()
-db.create_tables([Device])
+# Create the table
+Base.metadata.create_all(engine)
+# Create a session to use the tables, bound to above engine
+Session = sessionmaker(bind=engine)
+# Create a session
+session = Session()
 
 
 def insert_device(ip, hostname, device_type):
@@ -40,68 +47,89 @@ def insert_device(ip, hostname, device_type):
         device_type: The device type.
 
     Returns:
-        None
+        True if the device was added, False if the device already exists.
     """
+
     try:
-        device = Device(ip=ip, hostname=hostname, device_type=device_type)
-        device.save()
-    except peewee.IntegrityError:
-        return 0
+        device = Devices(ip=ip, hostname=hostname, device_type=device_type)
+        session.add(device)
+        session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        return False
+    else:
+        return True
 
 
-def list_all_ips():
+def insert_device_bulk(devices_object):
     """
-    List all the IPs in the database.
+    Insert multiple device into the database.
 
     Args:
-        None
+        devices_object: an object containing the devices to be added.
 
     Returns:
-        A list of all the IPs in the database with their device IDs.
+        None
     """
 
-    device = []
-    device_id = []
-    for device_ip in Device.select():
-        device.append(device_ip.ip)
-        device_id.append(device_ip.id)
-    return device, device_id
+    final_list = []
+    print("Checking for duplicate devices in the database ...")
+    for xx in devices_object:
+        xx = Devices(ip=xx.ip, hostname=xx.hostname, device_type=xx.device_type)
+        final_list.append(xx)
+
+    print("Adding devices to the database.")
+    session.add_all(final_list)
+    # Commit the changes
+    session.commit()
 
 
 def list_all_ips_with_type():
     """
     List all the IPs in the database with their device types.
 
-    Args:
-        None
-
-
     Returns:
         A list of all the IPs in the database with their device types.
     """
 
-    device_id = []
-    device_ip = []
-    device_hostname = []
-    device_type = []
-
-    for device in Device.select():
-        device_id.append(device.id)
-        device_ip.append(device.ip)
-        device_hostname.append(device.hostname)
-        device_type.append(device.device_type)
-    return device_id, device_ip, device_hostname, device_type
+    devices = session.query(Devices).all()
+    return devices
 
 
-def delete_device(id):
+def remove_device(device_id):
     """
-    Delete a device from the database.
+    Remove a device from the database.
 
     Args:
-        id: The ID of the device.
+        device_id: The id of the device to remove.
 
     Returns:
-        1 if the device was deleted, 0 if the device was not deleted.
+        True if the device was removed, False if the device was not found.
     """
-    device = Device.delete_by_id(id)
-    return device
+
+    try:
+        device = session.query(Devices).filter(Devices.id == device_id).one()
+        session.delete(device)
+        session.commit()
+    except sqlalchemy.exc.NoResultFound:
+        return False
+    else:
+        return True
+
+
+def is_device_in_db(ip):
+    """
+    Check if a device is in the database.
+
+    Args:
+        ip: The IP of the device to check.
+
+    Returns:
+        True if the device is in the database, False if the device is not in the database.
+    """
+
+    device = session.query(Devices).filter(Devices.ip == ip).one_or_none()
+
+    if device is None:
+        return False
+    else:
+        return True
