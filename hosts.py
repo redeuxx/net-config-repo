@@ -1,3 +1,5 @@
+# hosts.py
+
 import ipaddress
 from tqdm import tqdm
 from icmplib import ping
@@ -13,6 +15,7 @@ def get_cidr_hosts(ip):
     Returns:
         The ip address or addresses
     """
+
     try:
         hosts = ipaddress.ip_network(ip).hosts()
         return hosts
@@ -30,6 +33,7 @@ def is_alive(ip):
 
     Returns: True or False
     """
+
     return ping(ip, count=2, timeout=1).is_alive
 
 

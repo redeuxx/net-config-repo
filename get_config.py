@@ -1,3 +1,5 @@
+# get_config.py
+
 from datetime import date, datetime
 from pathlib import Path
 import my_secrets
@@ -20,6 +22,7 @@ def get_config(device_username, device_password, device_ip, device_type):
     """
 
     # Set module_name to device_type
+
     module_name = device_type
 
     # Import module named device_type, pass device type to get_running_config, return to string
@@ -59,7 +62,7 @@ def fetch_all_configs():
         device_complete_path = Path(conf.STORE_DIR / device.ip)
         device_complete_path_filename = Path(device_complete_path / filename)
 
-        # Check if /running-configs dir exists, if not, create it
+        # Check if conf.STORE_DIR exists, if not, create it
         if not Path(conf.STORE_DIR).is_dir():
             Path(conf.STORE_DIR).mkdir()
 

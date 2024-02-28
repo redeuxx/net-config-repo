@@ -1,3 +1,5 @@
+# utils.py
+
 import os
 import conf
 
@@ -12,6 +14,7 @@ def get_directories(directory):
     Returns:
         A list of the directories in the directory.
     """
+
     directories = []
     for dirr in os.listdir(directory):
         if os.path.isdir(os.path.join(directory, dirr)):
@@ -32,6 +35,7 @@ def get_oldest_files(directory, amount):
     Returns:
         A list of the oldest files in the directory.
     """
+
     if len(os.listdir(directory)) <= amount:
         return []
 
@@ -57,6 +61,7 @@ def num_files(directory):
     Returns:
         The number of files in the directory.
     """
+
     number_of_files = 0
     for file in os.listdir(directory):
         if os.path.isfile(os.path.join(directory, file)):
@@ -76,6 +81,7 @@ def del_oldest_configs(amount):
         None
 
     """
+
     for i in get_directories(conf.STORE_DIR):
         for file in get_oldest_files(i, amount):
             print(f"Removing {os.path.join(i, file)}.")

@@ -1,3 +1,5 @@
+# device.py
+
 import my_secrets
 from netmiko import SSHDetect, exceptions
 
@@ -12,6 +14,7 @@ def detect_device(ip):
     Returns:
         best_match: The best match for the device type.
     """
+
     try:
         device = {
             "device_type": "autodetect",

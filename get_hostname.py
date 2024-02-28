@@ -1,3 +1,5 @@
+# get_hostname.py
+
 import my_secrets
 
 
@@ -14,6 +16,7 @@ def get_hostname(device_ip, device_type):
     """
 
     # Set module_name to device_type
+
     module_name = device_type
 
     # Import module named device_type, pass device type to get_running_config, return to string

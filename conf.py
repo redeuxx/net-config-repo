@@ -1,3 +1,5 @@
+# conf.py
+
 import pathlib
 
 VERSION = "0.0.1"
