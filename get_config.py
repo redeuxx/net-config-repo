@@ -1,5 +1,5 @@
 from datetime import date, datetime
-import os
+from pathlib import Path
 import my_secrets
 import conf
 import db
@@ -10,14 +10,15 @@ def get_config(device_username, device_password, device_ip, device_type):
     Get the running configuration of a device.
 
     Args:
-        username: The username to authenticate with.
-        password: The password to authenticate with.
+        device_username: The username to authenticate with.
+        device_password: The password to authenticate with.
         device_ip: The IP address of the device.
         device_type: The device parameters.
 
     Returns:
         The configuration of the device.
     """
+
     # Set module_name to device_type
     module_name = device_type
 
@@ -35,41 +36,37 @@ def fetch_all_configs():
     Fetch the running configuration of all devices in the database and write them to a file.
 
     Args:
-        None
+        No arguments.
 
     Returns:
-        None
+        Does not return anything.
     """
-    for device_ip, device_type in zip(
-        db.list_all_ips_with_type()[1], db.list_all_ips_with_type()[3]
-    ):
+
+    for device in db.list_all_ips_with_type():
         config = get_config(
-            my_secrets.USERNAME, my_secrets.PASSWORD, device_ip, device_type
+            my_secrets.USERNAME, my_secrets.PASSWORD, device.ip, device.device_type
         )
-        print(f"Fetching config for {device_ip} ...")
+        print(f"Fetching config for {device.ip} ...")
         now = datetime.now()
         filename = (
             str(date.today())
             + "_"
             + now.strftime("%H-%M-%S")
             + "_"
-            + device_ip
+            + device.ip
             + ".txt"
         )
-        dir_complete_path_1 = os.path.abspath(conf.STORE_DIR)
-        device_complete_path = os.path.join(dir_complete_path_1, device_ip)
-        file_complete_path = os.path.abspath(
-            os.path.join(device_complete_path, filename)
-        )
+        device_complete_path = Path(conf.STORE_DIR / device.ip)
+        device_complete_path_filename = Path(device_complete_path / filename)
 
         # Check if /running-configs dir exists, if not, create it
-        if not os.path.exists(dir_complete_path_1):
-            os.mkdir(dir_complete_path_1)
+        if not Path(conf.STORE_DIR).is_dir():
+            Path(conf.STORE_DIR).mkdir()
 
         # Check if device dir exists, if not, create it
-        if not os.path.exists(device_complete_path):
-            os.mkdir(device_complete_path)
+        if not Path(device_complete_path).is_dir():
+            Path(device_complete_path).mkdir()
 
         # Write the configuration to a file
-        with open(file_complete_path, "w", encoding="utf-8") as f_config:
-            f_config.write(config)
+        with open(device_complete_path_filename, "w", encoding="utf-8") as f_config:
+            f_config.write(config.strip())
