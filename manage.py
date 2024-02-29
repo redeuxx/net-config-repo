@@ -45,6 +45,7 @@ group.add_argument(
 group.add_argument(
     "--clean", action="store_true", help="Clean up running-configs/ directory."
 )
+group.add_argument("--search", help="Search for a device in the database.")
 # end group
 
 # Optional arguments
@@ -137,6 +138,12 @@ elif args.remove:
 
 elif args.fetchall:
     get_config.fetch_all_configs()
+
+elif args.search:
+    search_results = db.search(args.search)
+    for device in search_results:
+        print(f"{device.id} | {device.ip} | {device.hostname} | {device.device_type}")
+    print(f"{len(search_results)} devices found.")
 
 elif args.clean:
     print("Cleaning up running-configs/ directory.")

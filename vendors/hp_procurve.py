@@ -18,7 +18,6 @@ def get_running_config(device_username, device_password, device_ip, device_type)
 
     """
 
-
     device = {
         "device_type": device_type,
         "host": device_ip,

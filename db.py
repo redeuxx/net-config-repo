@@ -1,7 +1,7 @@
 # db.py
 
 from datetime import datetime
-from sqlalchemy import create_engine, String, Integer, Column, DateTime
+from sqlalchemy import create_engine, String, Integer, Column, DateTime, or_
 from sqlalchemy.orm import declarative_base, sessionmaker
 import sqlalchemy.exc
 
@@ -135,3 +135,29 @@ def is_device_in_db(ip):
         return False
     else:
         return True
+
+
+def search(search_string):
+    """
+    Search for a device in the database.
+
+    Args:
+        search_string: The string to search for.
+
+    Returns:
+        A list of all the devices in the database.
+    """
+
+    devices = (
+        session.query(Devices)
+        .filter(
+            or_(
+                Devices.ip.like(f"%{search_string}%"),
+                Devices.hostname.like(f"%{search_string}%"),
+                Devices.device_type.like(f"%{search_string}%"),
+            )
+        )
+        .all()
+    )
+
+    return devices
