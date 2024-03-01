@@ -22,7 +22,6 @@ def get_config(device_username, device_password, device_ip, device_type):
     """
 
     # Set module_name to device_type
-
     module_name = device_type
 
     # Import module named device_type, pass device type to get_running_config, return to string
@@ -30,7 +29,7 @@ def get_config(device_username, device_password, device_ip, device_type):
         device_username, device_password, device_ip, device_type
     )
 
-    # Return the configuration
+    # Return the configuration or error
     return config
 
 
@@ -49,27 +48,33 @@ def fetch_all_configs():
         config = get_config(
             my_secrets.USERNAME, my_secrets.PASSWORD, device.ip, device.device_type
         )
+
         print(f"Fetching config for {device.ip} ...")
-        now = datetime.now()
-        filename = (
-            str(date.today())
-            + "_"
-            + now.strftime("%H-%M-%S")
-            + "_"
-            + device.ip
-            + ".txt"
-        )
-        device_complete_path = Path(conf.STORE_DIR / device.ip)
-        device_complete_path_filename = Path(device_complete_path / filename)
 
-        # Check if conf.STORE_DIR exists, if not, create it
-        if not Path(conf.STORE_DIR).is_dir():
-            Path(conf.STORE_DIR).mkdir()
+        if "Error:" not in config:
+            now = datetime.now()
+            filename = (
+                str(date.today())
+                + "_"
+                + now.strftime("%H-%M-%S")
+                + "_"
+                + device.ip
+                + ".txt"
+            )
 
-        # Check if device dir exists, if not, create it
-        if not Path(device_complete_path).is_dir():
-            Path(device_complete_path).mkdir()
+            device_complete_path = Path(conf.STORE_DIR / device.ip)
+            device_complete_path_filename = Path(device_complete_path / filename)
 
-        # Write the configuration to a file
-        with open(device_complete_path_filename, "w", encoding="utf-8") as f_config:
-            f_config.write(config.strip())
+            # Check if conf.STORE_DIR exists, if not, create it
+            if not Path(conf.STORE_DIR).is_dir():
+                Path(conf.STORE_DIR).mkdir()
+
+            # Check if device dir exists, if not, create it
+            if not Path(device_complete_path).is_dir():
+                Path(device_complete_path).mkdir()
+
+            # Write the configuration to a file
+            with open(device_complete_path_filename, "w", encoding="utf-8") as f_config:
+                f_config.write(config.strip())
+        else:
+            print(config.strip())

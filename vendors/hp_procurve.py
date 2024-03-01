@@ -18,24 +18,30 @@ def get_running_config(device_username, device_password, device_ip, device_type)
 
     """
 
-    device = {
-        "device_type": device_type,
-        "host": device_ip,
-        "username": device_username,
-        "password": device_password,
-        # wait a little longer for the device to respond
-        "fast_cli": False,
-        "global_delay_factor": 2,
-    }
-    with netmiko.ConnectHandler(**device) as connection:
-        # Get the running configuration
-        config = connection.send_command("show running-config")
+    try:
+        device = {
+            "device_type": device_type,
+            "host": device_ip,
+            "username": device_username,
+            "password": device_password,
+            # wait a little longer for the device to respond
+            "fast_cli": False,
+            "global_delay_factor": 2,
+        }
 
-    # Close the connection
-    connection.disconnect()
+        with netmiko.ConnectHandler(**device) as connection:
+            # Get the running configuration
+            config = connection.send_command("show running-config")
 
-    # Return the configuration
-    return config
+        # Close the connection
+        connection.disconnect()
+
+        # Return the configuration
+        return config
+    except Exception as e:
+        return (
+            f"Error: Could not connect to {device_ip} with the following error: \n{e}"
+        )
 
 
 def get_hostname(device_username, device_password, device_ip, device_type):
