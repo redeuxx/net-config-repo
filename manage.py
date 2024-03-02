@@ -23,7 +23,7 @@ class Item:
 
 # initialize the parser
 parser = argparse.ArgumentParser(
-    usage="test.py [options]", description="Switch management tool."
+    usage="manage.py [options]", description="Switch management tool."
 )
 parser.version = conf.VERSION
 
@@ -109,9 +109,10 @@ elif args.list:
     if len(devices) == 0:
         print("No devices in the database.")
     else:
+        print(f"{'ID':^6} | {'IP':^14} | {'Hostname':^27} | {'Device Type':^10}")
         for device in devices:
             print(
-                f"{device.id} | {device.ip} | {device.hostname} | {device.device_type}"
+                f"{device.id:6} | {device.ip:14} | {device.hostname:27} | {device.device_type:10}"
             )
 
 elif args.add:
@@ -141,8 +142,11 @@ elif args.fetchall:
 
 elif args.search:
     search_results = db.search(args.search)
+    print(f"{'ID':^6} | {'IP':^14} | {'Hostname':^27} | {'Device Type':^10}")
     for device in search_results:
-        print(f"{device.id} | {device.ip} | {device.hostname} | {device.device_type}")
+        print(
+            f"{device.id:6} | {device.ip:14} | {device.hostname:27} | {device.device_type:10}"
+        )
     print(f"{len(search_results)} devices found.")
 
 elif args.clean:
