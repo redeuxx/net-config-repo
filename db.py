@@ -29,6 +29,8 @@ class Devices(Base):
     hostname = Column(String, nullable=False)
     device_type = Column(String, nullable=False)
     date_updated = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
+    password = Column(String)
+    enable_password = Column(String)
 
 
 # Create the table
@@ -49,7 +51,7 @@ def insert_device(ip, hostname, device_type):
         device_type: The device type.
 
     Returns:
-        True if the device was added, False if the device already exists.
+        Boolean: True if the device was added, False if the device already exists.
     """
 
     try:
@@ -90,7 +92,7 @@ def list_all_ips_with_type():
     List all the IPs in the database with their device types.
 
     Returns:
-        A list of all the IPs in the database with their device types.
+        devices[]: A list of all the IPs in the database with their device types.
     """
 
     devices = session.query(Devices).all()
@@ -105,7 +107,7 @@ def remove_device(device_id):
         device_id: The id of the device to remove.
 
     Returns:
-        True if the device was removed, False if the device was not found.
+        Boolean: True if the device was removed, False if the device was not found.
     """
 
     try:
@@ -126,7 +128,7 @@ def is_device_in_db(ip):
         ip: The IP of the device to check.
 
     Returns:
-        True if the device is in the database, False if the device is not in the database.
+        Boolean: True if the device is in the database, False if the device is not in the database.
     """
 
     device = session.query(Devices).filter(Devices.ip == ip).one_or_none()
@@ -145,7 +147,7 @@ def search(search_string):
         search_string: The string to search for.
 
     Returns:
-        A list of all the devices in the database.
+        devices[]: A list of all the devices in the database.
     """
 
     devices = (

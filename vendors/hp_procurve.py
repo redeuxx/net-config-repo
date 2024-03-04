@@ -14,8 +14,8 @@ def get_running_config(device_username, device_password, device_ip, device_type)
         device_type: The device parameters.
 
     Returns:
-        The running configuration of the device.
-
+        String: The running configuration of the device.
+        String: The error message if the device could not be connected to.
     """
 
     try:
@@ -55,7 +55,7 @@ def get_hostname(device_username, device_password, device_ip, device_type):
         device_type: The device parameters.
 
     Returns:
-        The hostname of the device.
+        String: The hostname of the device.
     """
     # Get the running configuration
     config = get_config.get_config(
