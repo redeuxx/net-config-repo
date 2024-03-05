@@ -116,20 +116,23 @@ elif args.list:
             )
 
 elif args.add:
-    device_type = device.detect_device(args.add)
-    if device_type is not False:
-        print(f"Detecting {args.add} device type ...")
-        hostname = get_hostname.get_hostname(
-            device_ip=args.add, device_type=device_type
-        )
-        print(f"Getting hostname for {args.add} ...")
+    if hosts.is_alive(args.add) is True:
+        device_type = device.detect_device(args.add)
+        if device_type is not False:
+            print(f"Detecting {args.add} device type ...")
+            hostname = get_hostname.get_hostname(
+                device_ip=args.add, device_type=device_type
+            )
+            print(f"Getting hostname for {args.add} ...")
 
-        if db.insert_device(args.add, hostname, device_type) is True:
-            print(f"Device with ip {args.add} has been added to the database.")
+            if db.insert_device(args.add, hostname, device_type) is True:
+                print(f"Device with ip {args.add} has been added to the database.")
+            else:
+                print(f"Device with ip {args.add} already exists in the database.")
         else:
-            print(f"Device with ip {args.add} already exists in the database.")
+            print(f"Could not connect to {args.add}.")
     else:
-        print(f"Could not connect to {args.add}.")
+        print(f"Device with ip {args.add} is not reachable.")
 
 elif args.remove:
     if db.remove_device(args.remove) is True:
