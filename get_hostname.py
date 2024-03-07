@@ -15,12 +15,8 @@ def get_hostname(device_ip, device_type):
         hostname: The hostname of the device in a string.
     """
 
-    # Set module_name to device_type
-
-    module_name = device_type
-
     # Import module named device_type, pass device type to get_running_config, return to string
-    hostname = __import__(f"vendors.{module_name}", fromlist=[""]).get_hostname(
+    hostname = __import__(f"vendors.{device_type}", fromlist=[""]).get_hostname(
         my_secrets.USERNAME, my_secrets.PASSWORD, device_ip, device_type
     )
 

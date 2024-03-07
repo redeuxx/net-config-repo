@@ -21,15 +21,11 @@ def get_config(device_username, device_password, device_ip, device_type):
         The configuration of the device.
     """
 
-    # Set module_name to device_type
-    module_name = device_type
-
     # Import module named device_type, pass device type to get_running_config, return to string
-    config = __import__(f"vendors.{module_name}", fromlist=[""]).get_running_config(
+    config = __import__(f"vendors.{device_type}", fromlist=[""]).get_running_config(
         device_username, device_password, device_ip, device_type
     )
 
-    # Return the configuration or error
     return config
 
 
