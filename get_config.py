@@ -2,7 +2,6 @@
 
 from datetime import date, datetime
 from pathlib import Path
-import my_secrets
 import conf
 import db
 
@@ -42,7 +41,7 @@ def fetch_all_configs():
 
     for device in db.list_all_ips_with_type():
         config = get_config(
-            my_secrets.USERNAME, my_secrets.PASSWORD, device.ip, device.device_type
+            device.username, device.password, device.ip, device.device_type
         )
 
         print(f"Fetching config for {device.ip} ...")

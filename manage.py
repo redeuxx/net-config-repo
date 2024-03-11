@@ -9,6 +9,8 @@ import hosts
 import device
 import get_hostname
 import time
+import getpass
+import my_secrets
 
 start_time = time.perf_counter()
 
@@ -87,12 +89,20 @@ if args.scan:
         # get device type and hostname for each device, then add to the database
         if len(alive_hosts_final) != 0:
             for device_ip in alive_hosts_final:
-
-                device_type = device.detect_device(device_ip)
+                device_type = device.detect_device(
+                    device_ip,
+                    username=my_secrets.USERNAME,
+                    password=my_secrets.PASSWORD,
+                    enable_password=my_secrets.PASSWORD,
+                )
                 if device_type is not False:
                     print(f"Detecting {device_ip} device type ...")
                     hostname = get_hostname.get_hostname(
-                        device_ip=device_ip, device_type=device_type
+                        device_ip=device_ip,
+                        device_type=device_type,
+                        username=my_secrets.USERNAME,
+                        password=my_secrets.PASSWORD,
+                        enable_password=my_secrets.PASSWORD,
                     )
                     print(f"Getting hostname for {device_ip} ...")
                     single_device = Item(device_ip, hostname, device_type)
@@ -116,23 +126,49 @@ elif args.list:
             )
 
 elif args.add:
-    if hosts.is_alive(args.add) is True:
-        device_type = device.detect_device(args.add)
-        if device_type is not False:
+    if db.is_device_in_db(args.add) is False:
+        username = input("Enter the username to authenticate with: ")
+        password = getpass.getpass("Enter the password to authenticate with: ")
+        enable_password = getpass.getpass(
+            "Enter the enable password to authenticate with \n(Enter if it is the same as previous password): "
+        )
+        if enable_password == "":
+            enable_password = password
+        if hosts.is_alive(args.add) is True:
             print(f"Detecting {args.add} device type ...")
-            hostname = get_hostname.get_hostname(
-                device_ip=args.add, device_type=device_type
+            device_type = device.detect_device(
+                args.add, username, password, enable_password
             )
-            print(f"Getting hostname for {args.add} ...")
+            if device_type is not False:
+                hostname = get_hostname.get_hostname(
+                    device_ip=args.add,
+                    device_type=device_type,
+                    username=username,
+                    password=password,
+                    enable_password=enable_password,
+                )
+                print(f"Getting hostname for {args.add} ...")
 
-            if db.insert_device(args.add, hostname, device_type) is True:
-                print(f"Device with ip {args.add} has been added to the database.")
+                if (
+                    db.insert_device(
+                        args.add,
+                        hostname,
+                        device_type,
+                        username,
+                        password,
+                        enable_password,
+                    )
+                    is True
+                ):
+                    print(f"Device with ip {args.add} has been added to the database.")
+                else:
+                    print(f"Device with ip {args.add} already exists in the database.")
             else:
-                print(f"Device with ip {args.add} already exists in the database.")
+                print(f"Could not connect to {args.add}.")
         else:
-            print(f"Could not connect to {args.add}.")
+            print(f"Device with ip {args.add} is not reachable.")
     else:
-        print(f"Device with ip {args.add} is not reachable.")
+        print(f"Device with ip {args.add} already exists in the database.")
 
 elif args.remove:
     if db.remove_device(args.remove) is True:

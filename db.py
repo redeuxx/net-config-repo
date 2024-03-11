@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import create_engine, String, Integer, Column, DateTime, or_
 from sqlalchemy.orm import declarative_base, sessionmaker
 import sqlalchemy.exc
+import my_secrets
 
 # Create a new database engine, in this case, a sqlite database
 engine = create_engine("sqlite:///devices.db")
@@ -29,6 +30,7 @@ class Devices(Base):
     hostname = Column(String, nullable=False)
     device_type = Column(String, nullable=False)
     date_updated = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
+    username = Column(String)
     password = Column(String)
     enable_password = Column(String)
 
@@ -41,7 +43,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-def insert_device(ip, hostname, device_type):
+def insert_device(ip, hostname, device_type, username, password, enable_password):
     """
     Insert a device into the database.
 
@@ -49,13 +51,23 @@ def insert_device(ip, hostname, device_type):
         ip: The IP address of the device.
         hostname: The hostname of the device.
         device_type: The device type.
+        username: The username to authenticate with.
+        password: The password to authenticate with.
+        enable_password: The enable password to authenticate with.
 
     Returns:
         Boolean: True if the device was added, False if the device already exists.
     """
 
     try:
-        device = Devices(ip=ip, hostname=hostname, device_type=device_type)
+        device = Devices(
+            ip=ip,
+            hostname=hostname,
+            device_type=device_type,
+            username=username,
+            password=password,
+            enable_password=enable_password,
+        )
         session.add(device)
         session.commit()
     except sqlalchemy.exc.IntegrityError:
@@ -78,7 +90,14 @@ def insert_device_bulk(devices_object):
     final_list = []
     print("Checking for duplicate devices in the database ...")
     for xx in devices_object:
-        xx = Devices(ip=xx.ip, hostname=xx.hostname, device_type=xx.device_type)
+        xx = Devices(
+            ip=xx.ip,
+            hostname=xx.hostname,
+            device_type=xx.device_type,
+            username=my_secrets.USERNAME,
+            password=my_secrets.PASSWORD,
+            enable_password=my_secrets.PASSWORD,
+        )
         final_list.append(xx)
 
     print("Adding devices to the database.")

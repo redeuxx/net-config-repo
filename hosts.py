@@ -10,7 +10,7 @@ def get_cidr_hosts(ip):
     Get hosts given an ip address or CIDR.
 
     Args:
-        ip_address: The ip address/CIDR to check.
+        ip: The ip address/CIDR to check.
 
     Returns:
         The ip address or addresses
