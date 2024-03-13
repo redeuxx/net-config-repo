@@ -6,7 +6,9 @@ import conf
 import db
 
 
-def get_config(device_username, device_password, device_ip, device_type):
+def get_config(
+    device_username, device_password, device_ip, device_type, enable_password
+):
     """
     Get the running configuration of a device.
 
@@ -15,6 +17,7 @@ def get_config(device_username, device_password, device_ip, device_type):
         device_password: The password to authenticate with.
         device_ip: The IP address of the device.
         device_type: The device parameters.
+        enable_password: The enable password to authenticate with.
 
     Returns:
         The configuration of the device.
@@ -22,7 +25,11 @@ def get_config(device_username, device_password, device_ip, device_type):
 
     # Import module named device_type, pass device type to get_running_config, return to string
     config = __import__(f"vendors.{device_type}", fromlist=[""]).get_running_config(
-        device_username, device_password, device_ip, device_type
+        device_username,
+        device_password,
+        device_ip,
+        device_type,
+        enable_password,
     )
 
     return config
@@ -41,7 +48,11 @@ def fetch_all_configs():
 
     for device in db.list_all_ips_with_type():
         config = get_config(
-            device.username, device.password, device.ip, device.device_type
+            device.username,
+            device.password,
+            device.ip,
+            device.device_type,
+            device.enable_password,
         )
 
         print(f"Fetching config for {device.ip} ...")

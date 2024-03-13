@@ -20,7 +20,7 @@ def get_hostname(device_ip, device_type, username, password, enable_password):
 
     # Import module named device_type, pass device type to get_running_config, return to string
     hostname = __import__(f"vendors.{device_type}", fromlist=[""]).get_hostname(
-        my_secrets.USERNAME, my_secrets.PASSWORD, device_ip, device_type
+        username, password, device_ip, device_type, enable_password
     )
 
     # Return hostname
