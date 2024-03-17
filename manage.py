@@ -91,18 +91,18 @@ if args.scan:
             for device_ip in alive_hosts_final:
                 device_type = device.detect_device(
                     device_ip,
-                    username=my_secrets.USERNAME,
-                    password=my_secrets.PASSWORD,
-                    enable_password=my_secrets.PASSWORD,
+                    username=my_secrets.USERNAME,  # TODO: remove my_secrets
+                    password=my_secrets.PASSWORD,  # TODO: remove my_secrets
+                    enable_password=my_secrets.PASSWORD,  # TODO: remove my_secrets
                 )
                 if device_type is not False:
                     print(f"Detecting {device_ip} device type ...")
                     hostname = get_hostname.get_hostname(
                         device_ip=device_ip,
                         device_type=device_type,
-                        username=my_secrets.USERNAME,
-                        password=my_secrets.PASSWORD,
-                        enable_password=my_secrets.PASSWORD,
+                        username=my_secrets.USERNAME,  # TODO: remove my_secrets
+                        password=my_secrets.PASSWORD,  # TODO: remove my_secrets
+                        enable_password=my_secrets.PASSWORD,  # TODO: remove my_secrets
                     )
                     print(f"Getting hostname for {device_ip} ...")
                     single_device = Item(device_ip, hostname, device_type)

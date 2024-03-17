@@ -94,9 +94,9 @@ def insert_device_bulk(devices_object):
             ip=xx.ip,
             hostname=xx.hostname,
             device_type=xx.device_type,
-            username=my_secrets.USERNAME,
-            password=my_secrets.PASSWORD,
-            enable_password=my_secrets.PASSWORD,
+            username=xx.username,
+            password=xx.password,
+            enable_password=xx.enable_password,
         )
         final_list.append(xx)
 
