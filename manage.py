@@ -127,11 +127,10 @@ elif args.list:
 
 elif args.add:
     if db.is_device_in_db(args.add) is False:
-        username = input("Enter the username to authenticate with: ")
-        password = getpass.getpass("Enter the password to authenticate with: ")
-        enable_password = getpass.getpass(
-            "Enter the enable password to authenticate with \n(Enter if it is the same as previous password): "
-        )
+        credentials = utils.GetCredentials()
+        username = credentials.username
+        password = credentials.password
+        enable_password = credentials.enable_password
         if enable_password == "":
             enable_password = password
         if hosts.is_alive(args.add) is True:

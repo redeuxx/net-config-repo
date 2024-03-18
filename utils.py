@@ -2,6 +2,8 @@
 
 import os
 import conf
+from dataclasses import dataclass
+import getpass
 
 
 def get_directories(directory):
@@ -86,3 +88,17 @@ def del_oldest_configs(amount):
         for file in get_oldest_files(i, amount):
             print(f"Removing {os.path.join(i, file)}.")
             os.remove(os.path.join(i, file))
+
+
+# dataclass to accept user input for username, password and enable password
+@dataclass
+class GetCredentials:
+    """
+    Class to accept user input for username, password and enable password.
+    """
+
+    username: str = input("Enter the username to authenticate with: ")
+    password: str = getpass.getpass("Enter the password to authenticate with: ")
+    enable_password: str = getpass.getpass(
+        "Enter the enable password to authenticate with \n(Press Enter if it is the same as previous password): "
+    )
