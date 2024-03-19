@@ -1,7 +1,5 @@
 # get_hostname.py
 
-import my_secrets
-
 
 def get_hostname(device_ip, device_type, username, password, enable_password):
     """

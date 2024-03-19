@@ -48,7 +48,9 @@ def get_running_config(
         )
 
 
-def get_hostname(device_username, device_password, device_ip, device_type):
+def get_hostname(
+    device_username, device_password, device_ip, device_type, enable_password
+):
     """
     Get the hostname of a device.
 
@@ -57,13 +59,14 @@ def get_hostname(device_username, device_password, device_ip, device_type):
         device_password: The password to authenticate with.
         device_ip: The IP address of the device.
         device_type: The device parameters.
+        enable_password: The enable password to authenticate with.
 
     Returns:
         String: The hostname of the device.
     """
     # Get the running configuration
     config = get_config.get_config(
-        device_username, device_password, device_ip, device_type
+        device_username, device_password, device_ip, device_type, enable_password
     )
 
     # Get the hostname

@@ -4,7 +4,6 @@ from datetime import datetime
 from sqlalchemy import create_engine, String, Integer, Column, DateTime, or_
 from sqlalchemy.orm import declarative_base, sessionmaker
 import sqlalchemy.exc
-import my_secrets
 
 # Create a new database engine, in this case, a sqlite database
 engine = create_engine("sqlite:///devices.db")

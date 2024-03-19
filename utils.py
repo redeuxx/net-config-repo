@@ -90,7 +90,6 @@ def del_oldest_configs(amount):
             os.remove(os.path.join(i, file))
 
 
-# dataclass to accept user input for username, password and enable password
 @dataclass
 class GetCredentials:
     """

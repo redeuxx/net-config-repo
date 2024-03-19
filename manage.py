@@ -9,18 +9,21 @@ import hosts
 import device
 import get_hostname
 import time
-import getpass
-import my_secrets
 
 start_time = time.perf_counter()
 
 
 # Class to hold device information to be sent to the db
 class Item:
-    def __init__(self, d_ip, d_hostname, d_type):
+    def __init__(
+        self, d_ip, d_hostname, d_type, d_username, d_password, d_enable_password
+    ):
         self.ip = d_ip
         self.hostname = d_hostname
         self.device_type = d_type
+        self.username = d_username
+        self.password = d_password
+        self.enable_password = d_enable_password
 
 
 # initialize the parser
@@ -88,24 +91,39 @@ if args.scan:
 
         # get device type and hostname for each device, then add to the database
         if len(alive_hosts_final) != 0:
+            credentials = utils.GetCredentials()
+            username = credentials.username
+            password = credentials.password
+            enable_password = credentials.enable_password
+
+            if enable_password == "":
+                enable_password = password
+
             for device_ip in alive_hosts_final:
                 device_type = device.detect_device(
                     device_ip,
-                    username=my_secrets.USERNAME,  # TODO: remove my_secrets
-                    password=my_secrets.PASSWORD,  # TODO: remove my_secrets
-                    enable_password=my_secrets.PASSWORD,  # TODO: remove my_secrets
+                    username=credentials.username,
+                    password=credentials.password,
+                    enable_password=credentials.enable_password,
                 )
                 if device_type is not False:
                     print(f"Detecting {device_ip} device type ...")
                     hostname = get_hostname.get_hostname(
                         device_ip=device_ip,
                         device_type=device_type,
-                        username=my_secrets.USERNAME,  # TODO: remove my_secrets
-                        password=my_secrets.PASSWORD,  # TODO: remove my_secrets
-                        enable_password=my_secrets.PASSWORD,  # TODO: remove my_secrets
+                        username=credentials.username,
+                        password=credentials.password,
+                        enable_password=credentials.enable_password,
                     )
                     print(f"Getting hostname for {device_ip} ...")
-                    single_device = Item(device_ip, hostname, device_type)
+                    single_device = Item(
+                        device_ip,
+                        hostname,
+                        device_type,
+                        username,
+                        password,
+                        enable_password,
+                    )
                     devices_object.append(single_device)
                 else:
                     print(f"Could not connect to {device_ip}.")

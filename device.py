@@ -1,6 +1,5 @@
 # device.py
 
-import my_secrets
 from netmiko import SSHDetect, exceptions
 
 
