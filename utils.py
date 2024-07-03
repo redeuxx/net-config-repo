@@ -2,7 +2,6 @@
 
 import os
 import conf
-from dataclasses import dataclass
 import getpass
 
 
@@ -90,14 +89,25 @@ def del_oldest_configs(amount):
             os.remove(os.path.join(i, file))
 
 
-@dataclass
-class GetCredentials:
+def get_credentials():
     """
-    Class to accept user input for username, password and enable password.
+    Get user input for username, password and enable password.
+
+    Args:
+        None
+
+    Returns:
+        A dictionary with the username, password and enable password.
     """
 
-    username: str = input("Enter the username to authenticate with: ")
-    password: str = getpass.getpass("Enter the password to authenticate with: ")
-    enable_password: str = getpass.getpass(
+    username = input("Enter the username to authenticate with: ")
+    password = getpass.getpass("Enter the password to authenticate with: ")
+    enable_password = getpass.getpass(
         "Enter the enable password to authenticate with \n(Press Enter if it is the same as previous password): "
     )
+
+    return {
+        "username": username,
+        "password": password,
+        "enable_password": enable_password,
+    }

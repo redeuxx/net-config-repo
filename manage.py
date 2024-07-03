@@ -68,6 +68,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.scan:
+    credentials = utils.get_credentials()
+    username = credentials["username"]
+    password = credentials["password"]
+    enable_password = credentials["enable_password"]
     alive_hosts = hosts.scan_cidr(args.scan)
     alive_hosts_filtered = []
     alive_hosts_final = []
@@ -91,29 +95,24 @@ if args.scan:
 
         # get device type and hostname for each device, then add to the database
         if len(alive_hosts_final) != 0:
-            credentials = utils.GetCredentials()
-            username = credentials.username
-            password = credentials.password
-            enable_password = credentials.enable_password
-
             if enable_password == "":
                 enable_password = password
 
             for device_ip in alive_hosts_final:
                 device_type = device.detect_device(
                     device_ip,
-                    username=credentials.username,
-                    password=credentials.password,
-                    enable_password=credentials.enable_password,
+                    username,
+                    password,
+                    enable_password,
                 )
                 if device_type is not False:
                     print(f"Detecting {device_ip} device type ...")
                     hostname = get_hostname.get_hostname(
-                        device_ip=device_ip,
-                        device_type=device_type,
-                        username=credentials.username,
-                        password=credentials.password,
-                        enable_password=credentials.enable_password,
+                        device_ip,
+                        device_type,
+                        username,
+                        password,
+                        enable_password,
                     )
                     print(f"Getting hostname for {device_ip} ...")
                     single_device = Item(
@@ -145,10 +144,11 @@ elif args.list:
 
 elif args.add:
     if db.is_device_in_db(args.add) is False:
-        credentials = utils.GetCredentials()
-        username = credentials.username
-        password = credentials.password
-        enable_password = credentials.enable_password
+        credentials = utils.get_credentials()
+        username = credentials["username"]
+        password = credentials["password"]
+        enable_password = credentials["enable_password"]
+
         if enable_password == "":
             enable_password = password
         if hosts.is_alive(args.add) is True:
