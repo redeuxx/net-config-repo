@@ -198,7 +198,8 @@ elif args.fetchall:
 
 elif args.search:
     search_results = db.search(args.search)
-    print(f"{'ID':^6} | {'IP':^14} | {'Hostname':^27} | {'Device Type':^10}")
+    if len(search_results) > 0:
+        print(f"{'ID':^6} | {'IP':^14} | {'Hostname':^27} | {'Device Type':^10}")
     for device in search_results:
         print(
             f"{device.id:6} | {device.ip:14} | {device.hostname:27} | {device.device_type:10}"
