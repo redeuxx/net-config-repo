@@ -64,6 +64,9 @@ parser.add_argument(
     "-skip",
     help="Skip adding device to the database when using the -add flag. Use a comma separated list of IPs.",
 )
+parser.add_argument(
+    "-device_type", help="Manually specify device type when adding a device."
+)
 
 args = parser.parse_args()
 
@@ -151,12 +154,16 @@ elif args.add:
 
         if enable_password == "":
             enable_password = password
+
         if hosts.is_alive(args.add) is True:
-            print(f"Detecting {args.add} device type ...")
-            device_type = device.detect_device(
-                args.add, username, password, enable_password
-            )
-            if device_type is not False:
+            if args.device_type:
+                device_type = args.device_type
+            else:
+                print(f"Detecting {args.add} device type ...")
+                device_type = device.detect_device(
+                    args.add, username, password, enable_password
+                )
+            if device_type is not False and device_type is not None:
                 hostname = get_hostname.get_hostname(
                     device_ip=args.add,
                     device_type=device_type,
@@ -181,7 +188,9 @@ elif args.add:
                 else:
                     print(f"Device with ip {args.add} already exists in the database.")
             else:
-                print(f"Could not connect to {args.add}.")
+                print(
+                    f"Could not connect to {args.add} or could not detect device type."
+                )
         else:
             print(f"Device with ip {args.add} is not reachable.")
     else:

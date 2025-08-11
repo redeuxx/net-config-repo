@@ -1,5 +1,4 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
-*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -206,3 +205,10 @@ __marimo__/
 .streamlit/secrets.toml
 pyvenv.cfg
 pyvenv.cfg
+
+# Custom
+devices.db
+bin/
+include/
+lib64
+test.py

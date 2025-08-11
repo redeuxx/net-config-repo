@@ -34,4 +34,5 @@ def detect_device(ip, username, password, enable_password):
 
         return best_match
     except exceptions.NetmikoAuthenticationException as e:
+        print(e)
         return False
