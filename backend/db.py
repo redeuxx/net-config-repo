@@ -49,6 +49,21 @@ class ScanJobs(Base):
     completed_at = Column(DateTime, nullable=True)
 
 
+class FetchJobs(Base):
+    """
+    Table to store config fetch job states.
+    """
+    __tablename__ = "fetch_jobs"
+    id = Column(Integer, primary_key=True)
+    status = Column(String, nullable=False, default="RUNNING")
+    message = Column(String, nullable=True)
+    detailed_log = Column(Text, default="")
+    progress_current = Column(Integer, default=0)
+    progress_total = Column(Integer, default=0)
+    started_at = Column(DateTime, default=datetime.now)
+    completed_at = Column(DateTime, nullable=True)
+
+
 class ConfigVersions(Base):
     """
     Table to store configuration versions for devices.

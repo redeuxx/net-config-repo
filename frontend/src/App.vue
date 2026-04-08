@@ -14,7 +14,7 @@ const fetchScanJobs = async () => {
   try {
     const res = await axios.get('/api/jobs/scan')
     scanJobs.value = res.data
-    
+
     const isRunning = scanJobs.value.some(job => job.status === 'RUNNING')
     if (isRunning) {
       if (pollingInterval) clearTimeout(pollingInterval)
@@ -30,6 +30,31 @@ const fetchScanJobs = async () => {
 
 provide('scanJobs', scanJobs)
 provide('fetchScanJobs', fetchScanJobs)
+
+// Global Fetch Jobs State
+const fetchJobs = ref([])
+let fetchPollingInterval = null
+
+const refreshFetchJobs = async () => {
+  try {
+    const res = await axios.get('/api/jobs/fetch')
+    fetchJobs.value = res.data
+
+    const isRunning = fetchJobs.value.some(job => job.status === 'RUNNING')
+    if (isRunning) {
+      if (fetchPollingInterval) clearTimeout(fetchPollingInterval)
+      fetchPollingInterval = setTimeout(refreshFetchJobs, 2000)
+    } else if (fetchPollingInterval) {
+      clearTimeout(fetchPollingInterval)
+      fetchPollingInterval = null
+    }
+  } catch (err) {
+    console.error('Error fetching fetch jobs', err)
+  }
+}
+
+provide('fetchJobs', fetchJobs)
+provide('refreshFetchJobs', refreshFetchJobs)
 
 // Settings Modal State
 const showSettingsModal = ref(false)
@@ -102,7 +127,7 @@ onMounted(() => {
     <!-- Sidebar Navigation -->
     <aside class="w-full md:w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow flex flex-col">
       <div class="p-6 border-b dark:border-gray-700 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">Net Config</h1>
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">net-config-repo</h1>
         
         <!-- Dark Mode Toggle Mobile -->
         <button @click="toggleDark" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -122,11 +147,18 @@ onMounted(() => {
         <router-link to="/devices" class="block px-4 py-2 rounded-md font-medium" :class="[ $route.path === '/devices' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' ]">
           Devices
         </router-link>
-        <router-link to="/configs" class="block px-4 py-2 rounded-md font-medium" :class="[ $route.path === '/configs' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' ]">
-          Global Configs
+        <router-link to="/devices/add" class="block pl-8 pr-4 py-1.5 rounded-md text-sm font-medium" :class="[ $route.path === '/devices/add' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' ]">
+          Add Device
         </router-link>
-        <router-link to="/scans" class="block px-4 py-2 rounded-md font-medium flex justify-between items-center" :class="[ $route.path === '/scans' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' ]">
-          <span>Scans</span>
+        <router-link to="/devices/fetch" class="flex justify-between items-center pl-8 pr-4 py-1.5 rounded-md text-sm font-medium" :class="[ $route.path === '/devices/fetch' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' ]">
+          <span>Fetch Configs</span>
+          <span v-if="fetchJobs.some(j => j.status === 'RUNNING')" class="flex h-3 w-3 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </span>
+        </router-link>
+        <router-link to="/devices/scan" class="flex justify-between items-center pl-8 pr-4 py-1.5 rounded-md text-sm font-medium" :class="[ $route.path === '/devices/scan' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' ]">
+          <span>Scan Network</span>
           <span v-if="scanJobs.some(j => j.status === 'RUNNING')" class="flex h-3 w-3 relative">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
@@ -158,13 +190,19 @@ onMounted(() => {
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto flex flex-col">
       <div v-if="actionMessage" class="mb-4 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded shadow-sm flex justify-between items-center">
         {{ actionMessage }}
         <button @click="actionMessage = ''" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200">x</button>
       </div>
-      
-      <router-view></router-view>
+
+      <div class="flex-1">
+        <router-view></router-view>
+      </div>
+
+      <footer class="mt-8 pt-4 border-t dark:border-gray-700 text-center text-xs text-gray-400 dark:text-gray-500">
+        <a href="https://github.com/redeuxx/net-config-repo" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">net-config-repo</a>
+      </footer>
     </main>
 
     <!-- Settings Modal -->

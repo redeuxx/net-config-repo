@@ -26,6 +26,11 @@ async def lifespan(app: FastAPI):
             job.status = "FAILED"
             job.message = "Scan interrupted (Server restarted)"
             job.completed_at = datetime.now()
+        stuck_fetch_jobs = db_session.query(db.FetchJobs).filter_by(status="RUNNING").all()
+        for job in stuck_fetch_jobs:
+            job.status = "FAILED"
+            job.message = "Fetch interrupted (Server restarted)"
+            job.completed_at = datetime.now()
         db_session.commit()
     except Exception as e:
         print(f"Error cleaning up stuck jobs: {e}")
@@ -114,6 +119,84 @@ class ScanJobOut(BaseModel):
 
 class FetchConfigsRequest(BaseModel):
     pass # Empty body for now
+
+class FetchJobOut(BaseModel):
+    id: int
+    status: str
+    message: Optional[str] = None
+    detailed_log: Optional[str] = None
+    progress_current: int
+    progress_total: int
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    class Config:
+        from_attributes = True
+
+@app.get("/api/stats")
+def get_stats(database: Session = Depends(db.get_db)):
+    """Return summary statistics for the dashboard."""
+    from sqlalchemy import func
+    from datetime import timedelta
+
+    total_devices = database.query(func.count(db.Devices.id)).scalar() or 0
+    total_configs = database.query(func.count(db.ConfigVersions.id)).scalar() or 0
+
+    since_24h = datetime.now() - timedelta(hours=24)
+    configs_24h = database.query(func.count(db.ConfigVersions.id)).filter(
+        db.ConfigVersions.timestamp >= since_24h
+    ).scalar() or 0
+
+    devices_with_configs_ids = database.query(db.ConfigVersions.device_id).distinct().subquery()
+    devices_no_configs = database.query(func.count(db.Devices.id)).filter(
+        ~db.Devices.id.in_(database.query(devices_with_configs_ids))
+    ).scalar() or 0
+
+    type_counts = database.query(
+        db.Devices.device_type,
+        func.count(db.Devices.id).label("count")
+    ).group_by(db.Devices.device_type).order_by(func.count(db.Devices.id).desc()).all()
+
+    last_fetch = database.query(db.FetchJobs).order_by(db.FetchJobs.id.desc()).first()
+    last_scan = database.query(db.ScanJobs).order_by(db.ScanJobs.id.desc()).first()
+
+    recent_configs = database.query(
+        db.ConfigVersions.id,
+        db.ConfigVersions.timestamp,
+        db.Devices.ip,
+        db.Devices.hostname,
+        db.Devices.device_type,
+    ).join(db.Devices).order_by(db.ConfigVersions.timestamp.desc()).limit(10).all()
+
+    return {
+        "total_devices": total_devices,
+        "total_configs": total_configs,
+        "configs_last_24h": configs_24h,
+        "devices_without_configs": devices_no_configs,
+        "device_type_breakdown": [{"type": t, "count": c} for t, c in type_counts],
+        "last_fetch_job": {
+            "status": last_fetch.status,
+            "message": last_fetch.message,
+            "started_at": last_fetch.started_at.isoformat(),
+            "completed_at": last_fetch.completed_at.isoformat() if last_fetch.completed_at else None,
+        } if last_fetch else None,
+        "last_scan_job": {
+            "status": last_scan.status,
+            "cidr": last_scan.cidr,
+            "message": last_scan.message,
+            "started_at": last_scan.started_at.isoformat(),
+            "completed_at": last_scan.completed_at.isoformat() if last_scan.completed_at else None,
+        } if last_scan else None,
+        "recent_configs": [
+            {
+                "id": r.id,
+                "timestamp": r.timestamp.isoformat(),
+                "ip": r.ip,
+                "hostname": r.hostname,
+                "device_type": r.device_type,
+            }
+            for r in recent_configs
+        ],
+    }
 
 @app.get("/api/devices", response_model=List[DeviceOut])
 def list_devices(database: Session = Depends(db.get_db)):
@@ -265,14 +348,131 @@ def get_scan_jobs(database: Session = Depends(db.get_db)):
 
 # --- Background task functions ---
 
-def task_fetch_configs():
-    """Background task to fetch configs and prune old ones."""
+def task_fetch_configs(job_id: int):
+    """Background task to fetch configs for all devices with job tracking."""
     db_session = db.SessionLocal()
+    job = db_session.query(db.FetchJobs).filter_by(id=job_id).first()
+    if not job:
+        db_session.close()
+        return
+
+    def ts():
+        return datetime.now().strftime("%H:%M:%S")
+
+    def log_job(msg):
+        line = f"[{ts()}] {msg}"
+        job.message = msg
+        job.detailed_log = (job.detailed_log or "") + line + "\n"
+        db_session.commit()
+
     try:
-        get_config.fetch_all_configs(db_session)
+        devices = db_session.query(db.Devices).all()
+        job.progress_total = len(devices)
+        db_session.commit()
+
+        if not devices:
+            log_job("No devices in database.")
+            job.status = "COMPLETED"
+            job.completed_at = datetime.now()
+            db_session.commit()
+            return
+
+        device_dicts = [
+            {
+                "id": d.id, "ip": d.ip, "device_type": d.device_type,
+                "username": d.username, "password": d.password,
+                "enable_password": d.enable_password,
+            }
+            for d in devices if d.ip and d.device_type
+        ]
+        skipped = len(devices) - len(device_dicts)
+        if skipped:
+            log_job(f"Skipping {skipped} device(s) with missing IP or device type.")
+        job.progress_total = len(device_dicts)
+        db_session.commit()
+
+        if not device_dicts:
+            log_job("No valid devices to fetch.")
+            job.status = "COMPLETED"
+            job.completed_at = datetime.now()
+            db_session.commit()
+            return
+
+        log_job(f"Starting config fetch for {len(device_dicts)} device(s)...")
+
+        ATTEMPT_TIMEOUT = 45  # seconds before giving up on a single attempt
+
+        def try_get_config(device):
+            """Run get_config in a daemon thread with periodic status updates and a hard timeout.
+            Uses threading.Event instead of ThreadPoolExecutor to avoid shutdown(wait=True) blocking."""
+            label = f"{device['ip']} ({device['device_type']})"
+            result_holder = [None]
+            done_event = threading.Event()
+
+            def run():
+                result_holder[0] = get_config.get_config(
+                    device['username'], device['password'], device['ip'],
+                    device['device_type'], device['enable_password'],
+                )
+                done_event.set()
+
+            t = threading.Thread(target=run, daemon=True)
+            t.start()
+
+            elapsed = 0
+            poll = 5
+            while not done_event.wait(timeout=poll):
+                elapsed += poll
+                if elapsed >= ATTEMPT_TIMEOUT:
+                    log_job(f"[{label}] No response after {elapsed}s — aborting attempt.")
+                    return f"Error: Timed out after {elapsed}s with no response"
+                log_job(f"[{label}] Still waiting... ({elapsed}s elapsed)")
+
+            return result_holder[0]
+
+        for device in device_dicts:
+            label = f"{device['ip']} ({device['device_type']})"
+            log_job(f"[{label}] Starting... ({device_dicts.index(device) + 1}/{len(device_dicts)})")
+            config = "Error: Connection failed"
+            t_start = time.monotonic()
+            for attempt in range(11):
+                log_job(f"[{label}] Attempt {attempt + 1}/11 — connecting...")
+                config = try_get_config(device)
+                if "Error:" not in config:
+                    elapsed = time.monotonic() - t_start
+                    log_job(f"[{label}] SUCCESS — {len(config)} bytes in {elapsed:.1f}s.")
+                    break
+                error_detail = config.split("\n", 1)[-1].strip() if "\n" in config else config
+                log_job(f"[{label}] Attempt {attempt + 1}/11 failed: {error_detail}")
+                if attempt < 10:
+                    log_job(f"[{label}] Waiting 1s before retry {attempt + 2}/11...")
+                    time.sleep(1)
+
+            job.progress_current += 1
+            if "Error:" not in config:
+                new_config = db.ConfigVersions(device_id=device['id'], config_text=config.strip())
+                db_session.add(new_config)
+                log_job(f"[{label}] Config saved to database.")
+            else:
+                error_detail = config.split("\n", 1)[-1].strip() if "\n" in config else config
+                utils.log_message(db_session, "ERROR", f"Config fetch failed for {device['ip']}", config.strip())
+                log_job(f"[{label}] FAILED after 11 attempts. Last error: {error_detail}")
+            db_session.commit()
+
         utils.del_oldest_configs(db_session=db_session)
+        log_job("All devices processed. Old configs pruned.")
+        job.status = "COMPLETED"
+        job.message = "Fetch finished successfully."
+        job.completed_at = datetime.now()
+        db_session.commit()
+
     except Exception as e:
         utils.log_message(db_session, "ERROR", "Config fetch job failed", str(e))
+        job.status = "FAILED"
+        job.message = f"Error: {str(e)}"
+        job.detailed_log = (job.detailed_log or "") + f"[{ts()}] ERROR: {str(e)}\n"
+        job.completed_at = datetime.now()
+        db_session.commit()
     finally:
         db_session.close()
 
@@ -390,11 +590,152 @@ def task_scan_cidr(job_id: int, cidr: str):
         db_session.close()
 
 
+@app.get("/api/jobs/fetch", response_model=List[FetchJobOut])
+def get_fetch_jobs(database: Session = Depends(db.get_db)):
+    """Get the latest 5 fetch jobs."""
+    jobs = database.query(db.FetchJobs).order_by(db.FetchJobs.id.desc()).limit(5).all()
+    return jobs
+
+def task_fetch_single_device(job_id: int, device_id: int):
+    """Background task to fetch config for a single device with job tracking."""
+    db_session = db.SessionLocal()
+    job = db_session.query(db.FetchJobs).filter_by(id=job_id).first()
+    if not job:
+        db_session.close()
+        return
+
+    def ts():
+        return datetime.now().strftime("%H:%M:%S")
+
+    def log_job(msg):
+        line = f"[{ts()}] {msg}"
+        job.message = msg
+        job.detailed_log = (job.detailed_log or "") + line + "\n"
+        db_session.commit()
+
+    try:
+        device = db_session.query(db.Devices).filter_by(id=device_id).first()
+        if not device:
+            job.status = "FAILED"
+            job.message = "Device not found."
+            job.completed_at = datetime.now()
+            db_session.commit()
+            return
+
+        if not device.ip or not device.device_type:
+            job.status = "FAILED"
+            job.message = "Device has missing IP or device type."
+            job.completed_at = datetime.now()
+            db_session.commit()
+            return
+
+        device_dict = {
+            "id": device.id, "ip": device.ip, "device_type": device.device_type,
+            "username": device.username, "password": device.password,
+            "enable_password": device.enable_password,
+        }
+        job.progress_total = 1
+        db_session.commit()
+
+        label = f"{device_dict['ip']} ({device_dict['device_type']})"
+        ATTEMPT_TIMEOUT = 45
+
+        def try_get_config(device):
+            result_holder = [None]
+            done_event = threading.Event()
+            def run():
+                result_holder[0] = get_config.get_config(
+                    device['username'], device['password'], device['ip'],
+                    device['device_type'], device['enable_password'],
+                )
+                done_event.set()
+            t = threading.Thread(target=run, daemon=True)
+            t.start()
+            elapsed = 0
+            poll = 5
+            while not done_event.wait(timeout=poll):
+                elapsed += poll
+                if elapsed >= ATTEMPT_TIMEOUT:
+                    log_job(f"[{label}] No response after {elapsed}s — aborting attempt.")
+                    return f"Error: Timed out after {elapsed}s with no response"
+                log_job(f"[{label}] Still waiting... ({elapsed}s elapsed)")
+            return result_holder[0]
+
+        log_job(f"[{label}] Starting fetch...")
+        config = "Error: Connection failed"
+        t_start = time.monotonic()
+        for attempt in range(11):
+            log_job(f"[{label}] Attempt {attempt + 1}/11 — connecting...")
+            config = try_get_config(device_dict)
+            if "Error:" not in config:
+                elapsed = time.monotonic() - t_start
+                log_job(f"[{label}] SUCCESS — {len(config)} bytes in {elapsed:.1f}s.")
+                break
+            error_detail = config.split("\n", 1)[-1].strip() if "\n" in config else config
+            log_job(f"[{label}] Attempt {attempt + 1}/11 failed: {error_detail}")
+            if attempt < 10:
+                log_job(f"[{label}] Waiting 1s before retry {attempt + 2}/11...")
+                time.sleep(1)
+
+        job.progress_current = 1
+        if "Error:" not in config:
+            new_config = db.ConfigVersions(device_id=device_dict['id'], config_text=config.strip())
+            db_session.add(new_config)
+            utils.del_oldest_configs(db_session=db_session)
+            log_job(f"[{label}] Config saved to database.")
+            job.status = "COMPLETED"
+            job.message = f"Config fetched successfully for {device_dict['ip']}."
+        else:
+            error_detail = config.split("\n", 1)[-1].strip() if "\n" in config else config
+            utils.log_message(db_session, "ERROR", f"Config fetch failed for {device_dict['ip']}", config.strip())
+            log_job(f"[{label}] FAILED after 11 attempts. Last error: {error_detail}")
+            job.status = "FAILED"
+            job.message = f"Failed to fetch config for {device_dict['ip']}."
+
+        job.completed_at = datetime.now()
+        db_session.commit()
+
+    except Exception as e:
+        utils.log_message(db_session, "ERROR", "Single device config fetch failed", str(e))
+        job.status = "FAILED"
+        job.message = f"Error: {str(e)}"
+        job.detailed_log = (job.detailed_log or "") + f"[{ts()}] ERROR: {str(e)}\n"
+        job.completed_at = datetime.now()
+        db_session.commit()
+    finally:
+        db_session.close()
+
+
+@app.get("/api/jobs/fetch/{job_id}", response_model=FetchJobOut)
+def get_fetch_job(job_id: int, database: Session = Depends(db.get_db)):
+    """Get the status of a specific fetch job."""
+    job = database.query(db.FetchJobs).filter_by(id=job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
 @app.post("/api/jobs/fetch")
-def trigger_fetch_configs(background_tasks: BackgroundTasks):
+def trigger_fetch_configs(background_tasks: BackgroundTasks, database: Session = Depends(db.get_db)):
     """Trigger background job to fetch configs for all devices."""
-    background_tasks.add_task(task_fetch_configs)
+    new_job = db.FetchJobs(status="RUNNING", message="Starting...")
+    database.add(new_job)
+    database.commit()
+    database.refresh(new_job)
+    background_tasks.add_task(task_fetch_configs, new_job.id)
     return {"message": "Config fetch job started in the background"}
+
+@app.post("/api/devices/{device_id}/fetch")
+def trigger_device_fetch(device_id: int, background_tasks: BackgroundTasks, database: Session = Depends(db.get_db)):
+    """Trigger a background job to fetch config for a single device."""
+    device = database.query(db.Devices).filter_by(id=device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    new_job = db.FetchJobs(status="RUNNING", message=f"Starting fetch for {device.ip}...")
+    database.add(new_job)
+    database.commit()
+    database.refresh(new_job)
+    background_tasks.add_task(task_fetch_single_device, new_job.id, device_id)
+    return {"job_id": new_job.id, "message": f"Config fetch started for {device.ip}"}
 
 @app.post("/api/jobs/scan")
 def trigger_scan(scan_req: ScanRequest, background_tasks: BackgroundTasks, database: Session = Depends(db.get_db)):

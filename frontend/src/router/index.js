@@ -14,13 +14,23 @@ const router = createRouter({
       component: () => import('../views/DevicesView.vue')
     },
     {
+      path: '/devices/add',
+      name: 'add-device',
+      component: () => import('../views/AddDeviceView.vue')
+    },
+    {
+      path: '/devices/fetch',
+      name: 'fetch-configs',
+      component: () => import('../views/FetchConfigsView.vue')
+    },
+    {
       path: '/configs',
       name: 'configs',
       component: () => import('../views/ConfigsView.vue')
     },
     {
-      path: '/scans',
-      name: 'scans',
+      path: '/devices/scan',
+      name: 'scan-network',
       component: () => import('../views/ScansView.vue')
     },
     {

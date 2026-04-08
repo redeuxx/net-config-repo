@@ -61,7 +61,7 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Global Configs</h2>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Recent Configs</h2>
       <button @click="fetchConfigs" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded shadow-sm">
         Refresh
       </button>

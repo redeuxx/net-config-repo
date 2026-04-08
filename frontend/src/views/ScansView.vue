@@ -36,7 +36,7 @@ const triggerScan = async () => {
 <template>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Network Scans</h2>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Scan Network</h2>
       <div v-if="actionMessage" class="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded">
         {{ actionMessage }}
       </div>

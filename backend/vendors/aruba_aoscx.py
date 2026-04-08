@@ -26,15 +26,16 @@ def get_running_config(
             "host": device_ip,
             "username": device_username,
             "password": device_password,
-            # wait a little longer for the device to respond
             "fast_cli": False,
             "global_delay_factor": 2,
             "secret": enable_password,
+            "conn_timeout": 10,
+            "timeout": 30,
         }
 
         with netmiko.ConnectHandler(**device) as connection:
             # Get the running configuration
-            config = connection.send_command("show running-config")
+            config = connection.send_command("show running-config", read_timeout=30)
 
         # Close the connection
         connection.disconnect()
