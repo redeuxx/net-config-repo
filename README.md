@@ -8,6 +8,14 @@ This is an ongoing project to make sure I keep using what little Python skills I
 
 ## Documentation
 
+Comprehensive documentation can be found in the [docs/](docs/index.md) directory:
+
+- [Installation Guide](docs/installation.md)
+- [Usage Guide](docs/usage.md)
+- [Architecture & Design](docs/architecture.md)
+- [Vendor Support Guide](docs/vendors.md)
+- [API Reference](docs/api.md)
+
 To run, use "python manage.py". Current options are:
 
 - -h, --help       show this help message and exit

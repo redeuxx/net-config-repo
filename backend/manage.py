@@ -204,6 +204,8 @@ elif args.remove:
 
 elif args.fetchall:
     get_config.fetch_all_configs()
+    print("Cleaning up old configurations.")
+    utils.del_oldest_configs()
 
 elif args.search:
     search_results = db.search(args.search)
@@ -216,8 +218,8 @@ elif args.search:
     print(f"{len(search_results)} devices found.")
 
 elif args.clean:
-    print("Cleaning up running-configs/ directory.")
-    utils.del_oldest_configs(conf.MAX_CONFIGS)
+    print("Cleaning up old configurations in the database.")
+    utils.del_oldest_configs()
 
 end_time = time.perf_counter()
 elapsed_time = end_time - start_time

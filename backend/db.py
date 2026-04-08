@@ -1,14 +1,65 @@
 # db.py
 
 from datetime import datetime
-from sqlalchemy import create_engine, String, Integer, Column, DateTime, or_
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine, String, Integer, Column, DateTime, or_, ForeignKey, Text
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 import sqlalchemy.exc
 
+import os
+
 # Create a new database engine, in this case, a sqlite database
-engine = create_engine("sqlite:///devices.db")
+db_path = os.getenv("DATABASE_URL", "sqlite:///devices.db")
+engine = create_engine(db_path)
 # Create a new table with a name, count, amount, and valid column
 Base = declarative_base()
+
+class Settings(Base):
+    """
+    Table to store global settings.
+    """
+    __tablename__ = "settings"
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+
+
+class Logs(Base):
+    """
+    Table to store backend application logs.
+    """
+    __tablename__ = "logs"
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.now)
+    level = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    details = Column(Text, nullable=True)
+
+class ScanJobs(Base):
+    """
+    Table to store network scan job states.
+    """
+    __tablename__ = "scan_jobs"
+    id = Column(Integer, primary_key=True)
+    cidr = Column(String, nullable=False)
+    status = Column(String, nullable=False, default="RUNNING")
+    message = Column(String, nullable=True)
+    detailed_log = Column(Text, default="")
+    progress_current = Column(Integer, default=0)
+    progress_total = Column(Integer, default=0)
+    started_at = Column(DateTime, default=datetime.now)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class ConfigVersions(Base):
+    """
+    Table to store configuration versions for devices.
+    """
+    __tablename__ = "config_versions"
+    id = Column(Integer, primary_key=True)
+    device_id = Column(Integer, ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
+    config_text = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.now)
+
+    device = relationship("Devices", back_populates="configs")
 
 
 class Devices(Base):
@@ -33,13 +84,20 @@ class Devices(Base):
     password = Column(String)
     enable_password = Column(String)
 
+    configs = relationship("ConfigVersions", back_populates="device", cascade="all, delete-orphan")
 
-# Create the table
-Base.metadata.create_all(engine)
+
 # Create a session to use the tables, bound to above engine
-Session = sessionmaker(bind=engine)
-# Create a session
-session = Session()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create a session for backwards compatibility with existing CLI
+session = SessionLocal()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def insert_device(ip, hostname, device_type, username, password, enable_password):

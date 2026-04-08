@@ -1,0 +1,15 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.18.4",
+    "fastapi>=0.135.3",
+    "icmplib~=3.0.4",
+    "netmiko~=4.6.0",
+    "sqlalchemy~=2.0.27",
+    "tqdm~=4.66.2",
+    "uvicorn>=0.44.0",
+]
