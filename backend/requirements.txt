@@ -1,5 +1,5 @@
 netmiko~=4.6.0
-tqdm~=4.66.2
+tqdm~=4.67.3
 icmplib~=3.0.4
 argparse~=1.4.0
 SQLAlchemy~=2.0.27
